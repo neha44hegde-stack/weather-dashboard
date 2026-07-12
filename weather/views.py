@@ -167,14 +167,20 @@ def search_city(request):
 
 
 def _city_display_name(request, lat, lon):
-    """Best-effort city label for a coordinate pair, using a matching
-    favorite/history entry if one exists, else falling back to coordinates."""
+    """Best-effort city label for a coordinate pair: checks favorites and
+    search history first (fast, no network call), then falls back to
+    real reverse geocoding (geopy/Nominatim), then finally coordinates."""
     match = request.user.favorite_cities.filter(latitude=lat, longitude=lon).first()
     if match:
         return match.name
     match = request.user.search_history.filter(latitude=lat, longitude=lon).first()
     if match:
         return match.query
+
+    reverse = client.reverse_geocode(lat, lon)
+    if reverse and reverse.get("name"):
+        return reverse["name"]
+
     return f"{lat}, {lon}"
 
 

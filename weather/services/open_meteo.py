@@ -35,15 +35,43 @@ class OpenMeteoClient:
         return results
 
     def reverse_geocode(self, latitude, longitude):
-        """Coordinates -> nearest place name. Open-Meteo's geocoding API is
-        forward-only, so this asks the main forecast endpoint for the
-        timezone/place metadata it returns alongside the weather."""
-        data = self.get_current_weather(latitude, longitude)
-        return {
-            "latitude": data.get("latitude"),
-            "longitude": data.get("longitude"),
-            "timezone": data.get("timezone"),
-        }
+        """
+        Coordinates -> nearest real place name, using geopy's Nominatim
+        (OpenStreetMap, free, no API key). Falls back to None if the
+        lookup fails for any reason (network issue, rate limit, no match)
+        so callers can gracefully fall back to showing coordinates.
+        """
+        cache_key = f"reverse_geocode:{round(latitude, 4)}:{round(longitude, 4)}"
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached if cached != "" else None
+
+        try:
+            from geopy.geocoders import Nominatim
+
+            geolocator = Nominatim(user_agent="weather_dashboard_app", timeout=self.timeout)
+            location = geolocator.reverse((latitude, longitude), language="en", exactly_one=True)
+            if location is None:
+                cache.set(cache_key, "", settings.WEATHER_CACHE_TTL_SECONDS)
+                return None
+
+            address = location.raw.get("address", {})
+            name = (
+                address.get("village")
+                or address.get("town")
+                or address.get("city")
+                or address.get("suburb")
+                or address.get("county")
+                or location.address.split(",")[0]
+            )
+            result = {"name": name, "full_address": location.address}
+            cache.set(cache_key, result, settings.WEATHER_CACHE_TTL_SECONDS)
+            return result
+        except Exception:
+            # Any failure here (network, rate limit, geopy not installed
+            # correctly, etc.) should never break the page — just skip it.
+            cache.set(cache_key, "", settings.WEATHER_CACHE_TTL_SECONDS)
+            return None
 
     # --- Weather -------------------------------------------------
 
