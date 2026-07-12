@@ -75,6 +75,68 @@ def food_advice(temp_c, humidity_pct):
     return "Comfortable conditions — no special food precautions needed."
 
 
+# WMO weather codes used by Open-Meteo. Reference: https://open-meteo.com/en/docs
+WMO_CODES = {
+    0: "Clear sky",
+    1: "Mainly clear",
+    2: "Partly cloudy",
+    3: "Overcast",
+    45: "Fog",
+    48: "Depositing rime fog",
+    51: "Light drizzle",
+    53: "Moderate drizzle",
+    55: "Dense drizzle",
+    61: "Slight rain",
+    63: "Moderate rain",
+    65: "Heavy rain",
+    71: "Slight snow",
+    73: "Moderate snow",
+    75: "Heavy snow",
+    80: "Slight rain showers",
+    81: "Moderate rain showers",
+    82: "Violent rain showers",
+    95: "Thunderstorm",
+    96: "Thunderstorm with slight hail",
+    99: "Thunderstorm with heavy hail",
+}
+
+# Codes that indicate active or imminent thunderstorm activity.
+THUNDERSTORM_CODES = {95, 96, 99}
+
+
+def weather_code_description(code):
+    """Human-readable label for an Open-Meteo/WMO weather code."""
+    if code is None:
+        return None
+    return WMO_CODES.get(code, f"Unknown conditions (code {code})")
+
+
+def storm_alert(current_code, forecast_codes):
+    """
+    Rule-based thunderstorm/severe weather alert using WMO weather codes
+    already returned by Open-Meteo. No extra API key needed.
+
+    Checks the current condition first, then scans the next few days of
+    the forecast for upcoming storm risk.
+    """
+    if current_code in THUNDERSTORM_CODES:
+        return {
+            "level": "active",
+            "message": f"⛈️ Active thunderstorm right now ({weather_code_description(current_code)}). Avoid open areas and unplug sensitive electronics.",
+        }
+
+    if forecast_codes:
+        for i, code in enumerate(forecast_codes[:3]):  # look at next 3 days
+            if code in THUNDERSTORM_CODES:
+                when = "today" if i == 0 else ("tomorrow" if i == 1 else f"in {i} days")
+                return {
+                    "level": "upcoming",
+                    "message": f"⚡ Thunderstorms expected {when} ({weather_code_description(code)}). Plan outdoor activities accordingly.",
+                }
+
+    return None
+
+
 def comfort_score(temp_c, humidity_pct, wind_kmh, uv_index, us_aqi):
     """
     Rule-based 'comfort score' out of 10, combining temperature, humidity,
@@ -90,6 +152,7 @@ def comfort_score(temp_c, humidity_pct, wind_kmh, uv_index, us_aqi):
 
     score = 10.0
 
+    # Temperature: ideal ~15-22C for outdoor activity, penalize further away
     if temp_c < 5 or temp_c > 38:
         score -= 4
     elif temp_c < 10 or temp_c > 33:
@@ -97,21 +160,25 @@ def comfort_score(temp_c, humidity_pct, wind_kmh, uv_index, us_aqi):
     elif temp_c < 15 or temp_c > 28:
         score -= 1
 
+    # Humidity: above 70% makes heat feel worse and activity harder
     if humidity_pct is not None:
         if humidity_pct >= 85:
             score -= 2
         elif humidity_pct >= 70:
             score -= 1
 
+    # Wind: very strong wind is unpleasant; a light breeze is fine/neutral
     if wind_kmh is not None and wind_kmh >= 35:
         score -= 1.5
 
+    # UV: high UV makes prolonged outdoor activity riskier
     if uv_index is not None:
         if uv_index >= 9:
             score -= 1.5
         elif uv_index >= 6:
             score -= 0.75
 
+    # Air quality: poor AQI is a significant health factor for outdoor exertion
     if us_aqi is not None:
         if us_aqi >= 150:
             score -= 3
@@ -138,13 +205,17 @@ def comfort_score(temp_c, humidity_pct, wind_kmh, uv_index, us_aqi):
 def dashboard(request):
     favorites = request.user.favorite_cities.all()
     weather_by_city = {}
+    storm_by_city = {}
     for city in favorites:
         weather_by_city[city.id] = client.get_current_weather(city.latitude, city.longitude)
+        code = weather_by_city[city.id].get("current", {}).get("weather_code")
+        if code in THUNDERSTORM_CODES:
+            storm_by_city[city.id] = "⛈️ Thunderstorm right now"
 
     return render(
         request,
         "weather/dashboard.html",
-        {"favorites": favorites, "weather_by_city": weather_by_city},
+        {"favorites": favorites, "weather_by_city": weather_by_city, "storm_by_city": storm_by_city},
     )
 
 
@@ -154,6 +225,7 @@ def search_city(request):
     results = client.geocode_city(query) if query else []
 
     if query:
+        # Log to search history using the first geocoded match, if any.
         if results:
             top = results[0]
             SearchHistory.objects.create(
@@ -220,6 +292,11 @@ def city_detail(request, lat, lon):
         current.get("current", {}).get("uv_index"),
         air_quality.get("current", {}).get("us_aqi"),
     )
+    storm = storm_alert(
+        current.get("current", {}).get("weather_code"),
+        forecast.get("daily", {}).get("weather_code", []),
+    )
+    condition = weather_code_description(current.get("current", {}).get("weather_code"))
 
     return render(
         request,
@@ -237,6 +314,8 @@ def city_detail(request, lat, lon):
             "crop_tip": crop_tip,
             "food_tip": food_tip,
             "comfort": comfort,
+            "storm": storm,
+            "condition": condition,
         },
     )
 

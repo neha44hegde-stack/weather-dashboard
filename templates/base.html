@@ -5,7 +5,18 @@
   <meta charset="UTF-8">
   <title>{% block title %}Weather Dashboard{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="manifest" href="{% static 'manifest.json' %}">
+  <meta name="theme-color" content="#2b6cb0">
+  <link rel="icon" href="{% static 'icons/icon-192.png' %}">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register("{% static 'service-worker.js' %}");
+      });
+    }
+  </script>
+</head>
 <body>
   <header>
     <h1>🌤️ Weather Dashboard</h1>

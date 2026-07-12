@@ -7,6 +7,49 @@
     <button type="submit">Search</button>
   </form>
 
+  <details style="margin-top: 1rem;">
+    <summary>Can't find your village/area? Add it by coordinates instead</summary>
+    <form action="{% url 'weather:add_favorite' %}" method="post" id="manual-location-form" style="margin-top: 0.5rem;">
+      {% csrf_token %}
+      <input type="text" name="name" id="manual-name" placeholder="Place name (e.g. Heggondanahalli)" required>
+      <input type="text" name="country" placeholder="District/State (optional)">
+      <input type="number" step="any" name="latitude" id="manual-lat" placeholder="Latitude (e.g. 12.7409)" required>
+      <input type="number" step="any" name="longitude" id="manual-lon" placeholder="Longitude (e.g. 77.6883)" required>
+      <button type="button" id="use-my-location">📍 Use my current location</button>
+      <button type="submit">Add this location</button>
+    </form>
+    <p id="geolocation-status" style="font-size: 0.85em; opacity: 0.8;"></p>
+    <p style="font-size: 0.85em; opacity: 0.8;">
+      Tip: if "Use my current location" doesn't work (e.g. permission denied), open Google
+      Maps, find your spot, right-click it — it shows the exact latitude/longitude to
+      copy here instead. Either way, this works for any location on Earth, even ones
+      too small to show up in city search.
+    </p>
+    <script>
+      document.getElementById('use-my-location').addEventListener('click', function () {
+        const status = document.getElementById('geolocation-status');
+        if (!navigator.geolocation) {
+          status.textContent = 'Geolocation is not supported by your browser.';
+          return;
+        }
+        status.textContent = 'Locating you...';
+        navigator.geolocation.getCurrentPosition(
+          function (position) {
+            document.getElementById('manual-lat').value = position.coords.latitude.toFixed(5);
+            document.getElementById('manual-lon').value = position.coords.longitude.toFixed(5);
+            if (!document.getElementById('manual-name').value) {
+              document.getElementById('manual-name').value = 'My Location';
+            }
+            status.textContent = 'Location found! Edit the name if you like, then click "Add this location".';
+          },
+          function (error) {
+            status.textContent = 'Could not get your location (' + error.message + '). Try Google Maps instead.';
+          }
+        );
+      });
+    </script>
+  </details>
+
   <h2>Your Favorite Cities</h2>
   {% if favorites %}
     <div class="city-grid">
@@ -14,6 +57,11 @@
         {% with w=weather_by_city|dict_get:city.id %}
         <div class="city-card">
           <h3>{{ city.name }}{% if city.country %}, {{ city.country }}{% endif %}</h3>
+          {% with storm_msg=storm_by_city|dict_get:city.id %}
+            {% if storm_msg %}
+              <p style="color:#e53e3e; font-weight:bold;">{{ storm_msg }}</p>
+            {% endif %}
+          {% endwith %}
           {% if w.current %}
             <p class="temp">{{ w.current.temperature_2m }}&deg;C</p>
             <p>Feels like {{ w.current.apparent_temperature }}&deg;C</p>

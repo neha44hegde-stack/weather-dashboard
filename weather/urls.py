@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views
+from . import api, views
 
 app_name = "weather"
 
@@ -13,4 +13,7 @@ urlpatterns = [
     path("city/<float:lat>/<float:lon>/", views.city_detail, name="city_detail"),
     path("city/<float:lat>/<float:lon>/export/pdf/", views.export_pdf, name="export_pdf"),
     path("city/<float:lat>/<float:lon>/export/excel/", views.export_excel, name="export_excel"),
+    # REST API endpoints (JSON, testable via Thunder Client/Postman)
+    path("api/weather/<float:lat>/<float:lon>/", api.api_weather_detail, name="api_weather_detail"),
+    path("api/favorites/", api.api_favorites, name="api_favorites"),
 ]

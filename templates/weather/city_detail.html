@@ -11,6 +11,17 @@
     <a href="{% url 'weather:export_excel' latitude longitude %}">Download Excel report</a>
   </p>
 
+  {% if storm %}
+  <div class="city-card" style="background: #fed7d7; border: 2px solid #e53e3e;">
+    <h3>Storm Alert</h3>
+    <p>{{ storm.message }}</p>
+  </div>
+  {% endif %}
+
+  {% if condition %}
+  <p><strong>Conditions:</strong> {{ condition }}</p>
+  {% endif %}
+
   {% if comfort %}
   <div class="city-card" style="text-align:center;">
     <h3>🏃 Comfort Score</h3>
