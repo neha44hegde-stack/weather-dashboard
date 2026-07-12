@@ -11,6 +11,14 @@
     <a href="{% url 'weather:export_excel' latitude longitude %}">Download Excel report</a>
   </p>
 
+  {% if comfort %}
+  <div class="city-card" style="text-align:center;">
+    <h3>🏃 Comfort Score</h3>
+    <p class="temp">{{ comfort.score }}/10</p>
+    <p>{{ comfort.label }}</p>
+  </div>
+  {% endif %}
+
   {% if ai_insights.summary %}
   <div class="city-card">
     <h3>AI Summary</h3>
@@ -37,11 +45,89 @@
   </div>
   {% endif %}
 
+  {% if clothing_tip %}
+  <div class="city-card">
+    <h3>👕 Clothing Advice</h3>
+    <p>{{ clothing_tip }}</p>
+  </div>
+  {% endif %}
+
+  {% if crop_tip %}
+  <div class="city-card">
+    <h3>🌾 Crop/Farming Advice</h3>
+    <p>{{ crop_tip }}</p>
+  </div>
+  {% endif %}
+
+  {% if food_tip %}
+  <div class="city-card">
+    <h3>🍲 Food &amp; Hydration Advice</h3>
+    <p>{{ food_tip }}</p>
+  </div>
+  {% endif %}
+
   <h3>Air Quality</h3>
   <ul>
     <li>US AQI: {{ air_quality.current.us_aqi }}</li>
     <li>PM2.5: {{ air_quality.current.pm2_5 }}</li>
   </ul>
+
+  <h3>7-Day Trend</h3>
+  <canvas id="forecastChart" height="100"></canvas>
+  {{ forecast.daily.time|json_script:"forecast-dates" }}
+  {{ forecast.daily.temperature_2m_max|json_script:"forecast-max" }}
+  {{ forecast.daily.temperature_2m_min|json_script:"forecast-min" }}
+  {{ forecast.daily.precipitation_probability_max|json_script:"forecast-rain" }}
+  <script>
+    const dates = JSON.parse(document.getElementById('forecast-dates').textContent);
+    const maxTemps = JSON.parse(document.getElementById('forecast-max').textContent);
+    const minTemps = JSON.parse(document.getElementById('forecast-min').textContent);
+    const rainChance = JSON.parse(document.getElementById('forecast-rain').textContent);
+
+    new Chart(document.getElementById('forecastChart'), {
+      type: 'line',
+      data: {
+        labels: dates,
+        datasets: [
+          {
+            label: 'Max Temp (°C)',
+            data: maxTemps,
+            borderColor: '#e53e3e',
+            yAxisID: 'y',
+            tension: 0.3,
+          },
+          {
+            label: 'Min Temp (°C)',
+            data: minTemps,
+            borderColor: '#3182ce',
+            yAxisID: 'y',
+            tension: 0.3,
+          },
+          {
+            label: 'Rain Chance (%)',
+            data: rainChance,
+            borderColor: '#38a169',
+            yAxisID: 'y1',
+            tension: 0.3,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: { type: 'linear', position: 'left', title: { display: true, text: '°C' } },
+          y1: {
+            type: 'linear',
+            position: 'right',
+            title: { display: true, text: '% rain chance' },
+            grid: { drawOnChartArea: false },
+            min: 0,
+            max: 100,
+          },
+        },
+      },
+    });
+  </script>
 
   <h3>7-Day Forecast</h3>
   <table>
