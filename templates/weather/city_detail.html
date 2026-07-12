@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% load weather_extras %}
+{% block title %}City weather{% endblock %}
+{% block content %}
+  <h2>Weather details: {{ city_name }}</h2>
+  <p>Coordinates: {{ latitude }}, {{ longitude }}</p>
+
+  <p>
+    <a href="{% url 'weather:export_pdf' latitude longitude %}">Download PDF report</a>
+    &nbsp;|&nbsp;
+    <a href="{% url 'weather:export_excel' latitude longitude %}">Download Excel report</a>
+  </p>
+
+  {% if ai_insights.summary %}
+  <div class="city-card">
+    <h3>AI Summary</h3>
+    <p>{{ ai_insights.summary }}</p>
+    <p><strong>What to wear:</strong> {{ ai_insights.clothing }}</p>
+    <p><strong>Travel:</strong> {{ ai_insights.travel }}</p>
+    <p><strong>Farming:</strong> {{ ai_insights.farming }}</p>
+    <p><strong>Activities:</strong> {{ ai_insights.activity }}</p>
+  </div>
+  {% endif %}
+
+  <h3>Current</h3>
+  <ul>
+    <li>Temperature: {{ current.current.temperature_2m }}&deg;C</li>
+    <li>Humidity: {{ current.current.relative_humidity_2m }}%</li>
+    <li>UV Index: {{ current.current.uv_index }}</li>
+    <li>Wind: {{ current.current.wind_speed_10m }} km/h</li>
+  </ul>
+
+  {% if sunscreen_tip %}
+  <div class="city-card">
+    <h3>☀️ Sunscreen Advice</h3>
+    <p>{{ sunscreen_tip }}</p>
+  </div>
+  {% endif %}
+
+  <h3>Air Quality</h3>
+  <ul>
+    <li>US AQI: {{ air_quality.current.us_aqi }}</li>
+    <li>PM2.5: {{ air_quality.current.pm2_5 }}</li>
+  </ul>
+
+  <h3>7-Day Forecast</h3>
+  <table>
+    <tr><th>Date</th><th>Max</th><th>Min</th><th>Rain chance</th></tr>
+    {% for date in forecast.daily.time %}
+      <tr>
+        <td>{{ date }}</td>
+        <td>{{ forecast.daily.temperature_2m_max|dict_get:forloop.counter0 }}</td>
+        <td>{{ forecast.daily.temperature_2m_min|dict_get:forloop.counter0 }}</td>
+        <td>{{ forecast.daily.precipitation_probability_max|dict_get:forloop.counter0 }}%</td>
+      </tr>
+    {% endfor %}
+  </table>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load weather_extras %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+  <form action="{% url 'weather:search' %}" method="get">
+    <input type="text" name="q" placeholder="Search for a city...">
+    <button type="submit">Search</button>
+  </form>
+
+  <h2>Your Favorite Cities</h2>
+  {% if favorites %}
+    <div class="city-grid">
+      {% for city in favorites %}
+        {% with w=weather_by_city|dict_get:city.id %}
+        <div class="city-card">
+          <h3>{{ city.name }}{% if city.country %}, {{ city.country }}{% endif %}</h3>
+          {% if w.current %}
+            <p class="temp">{{ w.current.temperature_2m }}&deg;C</p>
+            <p>Feels like {{ w.current.apparent_temperature }}&deg;C</p>
+            <p>Humidity: {{ w.current.relative_humidity_2m }}%</p>
+            <p>Wind: {{ w.current.wind_speed_10m }} km/h</p>
+          {% endif %}
+          <a href="{% url 'weather:city_detail' city.latitude city.longitude %}">Details</a>
+          <form action="{% url 'weather:remove_favorite' city.pk %}" method="post">
+            {% csrf_token %}
+            <button type="submit">Remove</button>
+          </form>
+        </div>
+        {% endwith %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>No favorite cities yet. Search above and add one.</p>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Search results{% endblock %}
+{% block content %}
+  <h2>Results for "{{ query }}"</h2>
+  {% if results %}
+    <ul>
+      {% for r in results %}
+        <li>
+          {{ r.name }}{% if r.country %}, {{ r.country }}{% endif %}
+          <a href="{% url 'weather:city_detail' r.latitude r.longitude %}">View weather</a>
+          <form action="{% url 'weather:add_favorite' %}" method="post" style="display:inline">
+            {% csrf_token %}
+            <input type="hidden" name="name" value="{{ r.name }}">
+            <input type="hidden" name="country" value="{{ r.country }}">
+            <input type="hidden" name="latitude" value="{{ r.latitude }}">
+            <input type="hidden" name="longitude" value="{{ r.longitude }}">
+            <button type="submit">Add to favorites</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No matches found.</p>
+  {% endif %}
+{% endblock %}

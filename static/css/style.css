@@ -1,0 +1,62 @@
+:root {
+  --bg: #ffffff;
+  --fg: #1a1a1a;
+  --accent: #2b6cb0;
+  --card-bg: #f4f6f8;
+}
+html[data-theme="dark"] {
+  --bg: #121212;
+  --fg: #e6e6e6;
+  --accent: #63b3ed;
+  --card-bg: #1e1e1e;
+}
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid #ccc3;
+}
+nav a, nav button {
+  margin-left: 1rem;
+  color: var(--accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+}
+main {
+  padding: 2rem;
+}
+.city-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.city-card {
+  background: var(--card-bg);
+  border-radius: 8px;
+  padding: 1rem;
+  min-width: 200px;
+}
+.temp {
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--accent);
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+th, td {
+  border: 1px solid #ccc3;
+  padding: 0.5rem;
+  text-align: left;
+}

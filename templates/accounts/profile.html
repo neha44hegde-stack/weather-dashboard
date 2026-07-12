@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+  <h2>Your Profile</h2>
+  <form method="post">
+    {% csrf_token %}
+    <label>Theme:
+      <select name="theme">
+        <option value="light" {% if profile.theme == "light" %}selected{% endif %}>Light</option>
+        <option value="dark" {% if profile.theme == "dark" %}selected{% endif %}>Dark</option>
+      </select>
+    </label>
+    <label>Default city: <input type="text" name="default_city" value="{{ profile.default_city }}"></label>
+    <label><input type="checkbox" name="email_alerts_enabled" {% if profile.email_alerts_enabled %}checked{% endif %}> Email alerts</label>
+    <label><input type="checkbox" name="push_alerts_enabled" {% if profile.push_alerts_enabled %}checked{% endif %}> Push alerts</label>
+    <button type="submit">Save</button>
+  </form>
+{% endblock %}
