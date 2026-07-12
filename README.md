@@ -45,7 +45,6 @@ and the REST API. Also runs automatically on every push via GitHub Actions
 (`.github/workflows/tests.yml`).
 
 ## Project layout
-```
 config/          Django project settings, root urls, celery app
 accounts/        Registration, login, user profile (theme, default city, alert prefs)
 weather/         Views, models, REST API, rule-based advice logic
@@ -58,7 +57,6 @@ weather/tests.py                  Test suite (18 tests)
 templates/       HTML templates (base + accounts + weather), Chart.js trend charts
 static/          CSS (light/dark theme), PWA manifest + service worker + icons
 .github/workflows/tests.yml       CI: runs the test suite on every push/PR
-```
 ## Features
 
 **Hyperlocal location support** (the main thing that sets this apart from a
